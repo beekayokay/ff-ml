@@ -18,33 +18,37 @@ class GameScraper:
             table = soup.find('tbody')
             rows = table.findAll('tr')
         df = pd.DataFrame(columns=col)
-        count = 0
         for idx, item in enumerate(rows):
             data_set = rows[idx].findAll('td')
-            for idx, item in enumerate(data_set):
-                if idx == 0:
-                    df.loc[count, 'player_id'] = item['data-append-csv']
-                    df.loc[count, 'player'] = item.text
-                else:
-                    if item['data-stat'] in col:
-                        try:
-                            df.loc[count, item['data-stat']] = (
-                                (datetime.strptime(item.text, '%Y-%m-%d') -
-                                    datetime(1970, 1, 1)).total_seconds()
-                            )
-                        except ValueError:
+            if len(data_set) > 0:
+                for idx, item in enumerate(data_set):
+                    if idx == 0:
+                        df.loc[count, 'player_id'] = item['data-append-csv']
+                        df.loc[count, 'player'] = item.text
+                    else:
+                        if item['data-stat'] in col:
                             try:
                                 df.loc[count, item['data-stat']] = (
-                                    round(float(item.text), 4)
+                                    (datetime.strptime(item.text, '%Y-%m-%d') -
+                                        datetime(1970, 1, 1)).total_seconds()
                                 )
                             except ValueError:
-                                df.loc[count, item['data-stat']] = item.text
-            count += 1
+                                try:
+                                    df.loc[count, item['data-stat']] = (
+                                        round(float(item.text), 4)
+                                    )
+                                except ValueError:
+                                    df.loc[count, item['data-stat']] = item.text
+                count += 1
         df.log_id = (
             df.player_id + '-' +
             df.game_date.astype(int).astype(str) + '-' +
             df.week_num.astype(int).astype(str)
         )
+        df['fantasy_points'] = df['fantasy_points'].replace('', 0)
+        df['fantasy_points_ppr'] = df['fantasy_points_ppr'].replace('', 0)
+        df['draftkings_points'] = df['draftkings_points'].replace('', 0)
+        df['fanduel_points'] = df['fanduel_points'].replace('', 0)
         return df
 
 
@@ -58,7 +62,7 @@ class DatabaseMaker:
         self.df.to_sql(
             table_name,
             con=engine,
-            if_exists='replace',  # change to append later
+            if_exists='append',
             index=True,
             # chunksize=500,
             dtype={
