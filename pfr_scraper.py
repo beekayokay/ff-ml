@@ -38,7 +38,9 @@ class GameScraper:
                                         round(float(item.text), 4)
                                     )
                                 except ValueError:
-                                    df.loc[count, item['data-stat']] = item.text
+                                    df.loc[count, item['data-stat']] = (
+                                        item.text
+                                    )
                 count += 1
         df.log_id = (
             df.player_id + '-' +
@@ -49,6 +51,44 @@ class GameScraper:
         df['fantasy_points_ppr'] = df['fantasy_points_ppr'].replace('', 0)
         df['draftkings_points'] = df['draftkings_points'].replace('', 0)
         df['fanduel_points'] = df['fanduel_points'].replace('', 0)
+        return df
+
+    def create_team_df(self, col, count):
+        page = requests.get(self.url)
+        if page.status_code == 200:
+            soup = BeautifulSoup(page.content, "lxml")
+            table = soup.find('tbody')
+            rows = table.findAll('tr')
+        df = pd.DataFrame(columns=col)
+        for idx, item in enumerate(rows):
+            data_set = rows[idx].findAll('td')
+            if len(data_set) > 0:
+                for idx, item in enumerate(data_set):
+                    if item['data-stat'] in col:
+                        try:
+                            df.loc[count, item['data-stat']] = (
+                                (datetime.strptime(item.text, '%Y-%m-%d') -
+                                    datetime(1970, 1, 1)).total_seconds()
+                            )
+                        except ValueError:
+                            try:
+                                df.loc[count, item['data-stat']] = (
+                                    round(float(item.text), 4)
+                                )
+                            except ValueError:
+                                df.loc[count, item['data-stat']] = (
+                                    item.text
+                                )
+                count += 1
+        df.log_id = (
+            df.team + '-' +
+            df.game_date.astype(int).astype(str) + '-' +
+            df.week_num.astype(int).astype(str)
+        )
+        # df['fantasy_points'] = df['fantasy_points'].replace('', 0)
+        # df['fantasy_points_ppr'] = df['fantasy_points_ppr'].replace('', 0)
+        # df['draftkings_points'] = df['draftkings_points'].replace('', 0)
+        # df['fanduel_points'] = df['fanduel_points'].replace('', 0)
         return df
 
 
@@ -100,5 +140,39 @@ class DatabaseMaker:
                 'fga': Integer,
                 'xpm': Integer,
                 'xpa': Integer
+            }
+        )
+
+    def create_team_db(self):
+        engine = create_engine('sqlite:///test.db', echo=True)
+        table_name = 'gamelogs'
+        self.df.to_sql(
+            table_name,
+            con=engine,
+            if_exists='append',
+            index=True,
+            # chunksize=500,
+            dtype={
+                'log_id': String,
+                'team': String,
+                'year_id': Integer,
+                'game_date': Integer,
+                'gametime': String,
+                'local_time': String,
+                'game_location': String,
+                'opp': String,
+                'week_num': Integer,
+                'game_num': Integer,
+                'game_day_of_week': String,
+                'game_result': String,
+                'overtime': String,
+                'tot_yds': Integer,
+                'plays_offense': Integer,
+                'yds_per_play_offense': Float,
+                'plays_defense': Integer,
+                'yds_per_play_defense': Float,
+                'turnovers': Integer,
+                'time_of_poss': String,
+                'duration': String
             }
         )

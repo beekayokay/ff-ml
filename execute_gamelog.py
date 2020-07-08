@@ -24,12 +24,13 @@ while int(page_off) < 120000:
     counter = config_parser.get('SETTINGS', 'db_counter')
 
     url = (
-        'https://www.pro-football-reference.com/play-index/pgl_finder.cgi?'\
-        f'request=1&match=game&year_min={year1}&year_max={year2}&season_start=1&'\
-        'season_end=-1&pos%5B%5D=QB&pos%5B%5D=WR&pos%5B%5D=RB&pos%5B%5D=TE&'\
-        'is_starter=E&game_type=R&career_game_num_min=1&career_game_num_max=400&'\
-        'qb_start_num_min=1&qb_start_num_max=400&game_num_min=0&game_num_max=99&'\
-        'week_num_min=0&week_num_max=99&c5val=1.0&order_by=fantasy_points'\
+        'https://www.pro-football-reference.com/play-index/pgl_finder.cgi?'
+        f'request=1&match=game&year_min={year1}&year_max={year2}'
+        '&season_start=1&season_end=-1&pos%5B%5D=QB&pos%5B%5D=WR&pos%5B%5D=RB'
+        '&pos%5B%5D=TE&is_starter=E&game_type=R&career_game_num_min=1'
+        '&career_game_num_max=400&qb_start_num_min=1&qb_start_num_max=400'
+        '&game_num_min=0&game_num_max=99&week_num_min=0&week_num_max=99'
+        '&c5val=1.0&order_by=fantasy_points'
         f'&offset={page_off}'
     )
 

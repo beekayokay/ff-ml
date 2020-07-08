@@ -11,5 +11,5 @@ Years Pro
 
 # Sequence
 1. Scrape each gamelog page and update database1
-2. Clean raw gamelog data
-3. Scrape each team/year page and update database2
+2. Scrape each team/year page and update database2
+3. Clean raw gamelog data

@@ -1,0 +1,5 @@
+__pycache__/
+.vscode
+test.csv
+raw_gamelog.db
+raw_teamlog.db
