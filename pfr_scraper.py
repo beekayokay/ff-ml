@@ -85,10 +85,43 @@ class GameScraper:
             df.game_date.astype(int).astype(str) + '-' +
             df.week_num.astype(int).astype(str)
         )
-        # df['fantasy_points'] = df['fantasy_points'].replace('', 0)
-        # df['fantasy_points_ppr'] = df['fantasy_points_ppr'].replace('', 0)
-        # df['draftkings_points'] = df['draftkings_points'].replace('', 0)
-        # df['fanduel_points'] = df['fanduel_points'].replace('', 0)
+        return df
+
+    def create_draft_df(self, col, count):
+        page = requests.get(self.url)
+        if page.status_code == 200:
+            soup = BeautifulSoup(page.content, "lxml")
+            table = soup.find('tbody')
+            rows = table.findAll('tr')
+        df = pd.DataFrame(columns=col)
+        for idx, item in enumerate(rows):
+            data_set = rows[idx].findAll('td')
+            if len(data_set) > 0:
+                for idx, item in enumerate(data_set):
+                    if idx == 3:
+                        try:
+                            df.loc[count, 'player_id'] = item['data-append-csv']
+                            df.loc[count, 'player'] = item.text
+                        except KeyError:
+                            df.loc[count, 'player_id'] = 'NotAvail'
+                            df.loc[count, 'player'] = item.text
+                    else:
+                        if item['data-stat'] in col:
+                            try:
+                                df.loc[count, item['data-stat']] = (
+                                    (datetime.strptime(item.text, '%Y-%m-%d') -
+                                        datetime(1970, 1, 1)).total_seconds()
+                                )
+                            except ValueError:
+                                try:
+                                    df.loc[count, item['data-stat']] = (
+                                        round(float(item.text), 4)
+                                    )
+                                except ValueError:
+                                    df.loc[count, item['data-stat']] = (
+                                        item.text
+                                    )
+                count += 1
         return df
 
 
@@ -97,7 +130,7 @@ class DatabaseMaker:
         self.df = df
 
     def create_db(self):
-        engine = create_engine('sqlite:///test.db', echo=True)
+        engine = create_engine('sqlite:///raw_gamelog.db', echo=True)
         table_name = 'gamelogs'
         self.df.to_sql(
             table_name,
@@ -144,7 +177,7 @@ class DatabaseMaker:
         )
 
     def create_team_db(self):
-        engine = create_engine('sqlite:///test.db', echo=True)
+        engine = create_engine('sqlite:///raw_teamlog.db', echo=True)
         table_name = 'gamelogs'
         self.df.to_sql(
             table_name,
@@ -174,5 +207,25 @@ class DatabaseMaker:
                 'turnovers': Integer,
                 'time_of_poss': String,
                 'duration': String
+            }
+        )
+
+    def create_draft_db(self):
+        engine = create_engine('sqlite:///raw_draftlog.db', echo=True)
+        table_name = 'draftlogs'
+        self.df.to_sql(
+            table_name,
+            con=engine,
+            if_exists='append',
+            index=True,
+            dtype={
+                'player_id': String,
+                'player': String,
+                'year_id': Integer,
+                'draft_round': Integer,
+                'draft_pick': Integer,
+                'pos': String,
+                'draft_age': Integer,
+                'college_id': String
             }
         )
